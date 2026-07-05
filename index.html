@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>갈릴리 항해사 자격시험: 입항</title>
+  <style>
+    /* ===== RESET & BASE ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --faith-dark:  #1a1025;
+      --faith-purple: #3a1c4a;
+      --faith-gold:  #f5c842;
+      --light-gold:  #ffdf73;
+      --white:       #ffffff;
+      --red-flash:   rgba(200,0,0,0.55);
+      --font-main:   'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      font-family: var(--font-main);
+      background: var(--faith-dark);
+      color: var(--white);
+      touch-action: manipulation;
+    }
+
+    /* ===== SCREEN SYSTEM ===== */
+    .screen {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 24px 20px;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.6s ease;
+      z-index: 1;
+    }
+    .screen.active { opacity: 1; pointer-events: all; }
+
+    /* ===== SHARED STARS/LIGHTS ===== */
+    #starfield {
+      position: fixed; inset: 0; z-index: 0;
+      overflow: hidden; pointer-events: none;
+    }
+    .star {
+      position: absolute; border-radius: 50%;
+      background: var(--light-gold); 
+      animation: twinkle var(--d) infinite alternate, floatUp var(--s) linear infinite;
+    }
+    @keyframes twinkle { from { opacity: 0.2; } to { opacity: 1; } }
+    @keyframes floatUp { to { transform: translateY(-110vh); } }
+
+    /* ===== BOAT ANCHOR ===== */
+    #boat-icon {
+      position: fixed; bottom: 20px; left: 50%;
+      transform: translateX(-50%);
+      font-size: 52px; z-index: 3;
+      pointer-events: none;
+      animation: gentlyFloat 3s ease-in-out infinite;
+    }
+    @keyframes gentlyFloat {
+      0%,100% { transform: translateX(-50%) translateY(0); }
+      50%     { transform: translateX(-50%) translateY(-8px); }
+    }
+
+    /* ===== INTRO SCREEN ===== */
+    #screen-intro { background: transparent; gap: 18px; }
+
+    .intro-badge {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(245,200,66,0.3);
+      border-radius: 30px;
+      padding: 6px 18px; font-size: 13px;
+      letter-spacing: 2px; color: var(--light-gold);
+    }
+
+    .intro-title {
+      text-align: center; line-height: 1.25;
+    }
+    .intro-title .sub {
+      font-size: 15px; font-weight: 400;
+      color: var(--light-gold); letter-spacing: 1px;
+      display: block; margin-bottom: 6px;
+    }
+    .intro-title .main {
+      font-size: clamp(28px, 8vw, 38px);
+      font-weight: 900; letter-spacing: -1px;
+      background: linear-gradient(135deg, #f5c842, #ff9f43, #ee5a24);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 2px 8px rgba(245,200,66,0.4));
+      display: block;
+    }
+
+    .intro-verse {
+      background: rgba(255,255,255,0.07);
+      border-left: 3px solid #f5c842;
+      border-radius: 8px; padding: 14px 16px;
+      font-size: 13.5px; line-height: 1.7;
+      color: #fdf5e6; max-width: 340px;
+      text-align: center;
+    }
+    .intro-verse em { color: #f5c842; font-style: normal; font-weight: 700; }
+
+    .btn-start {
+      margin-top: 8px;
+      background: linear-gradient(135deg, #f5c842, #ff9f43);
+      color: #1a1a1a; border: none; border-radius: 50px;
+      padding: 16px 48px; font-size: 18px; font-weight: 800;
+      cursor: pointer; letter-spacing: 1px;
+      box-shadow: 0 6px 24px rgba(245,200,66,0.45);
+      transition: transform 0.15s, box-shadow 0.15s;
+      position: relative; z-index: 5;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-start:active { transform: scale(0.95); box-shadow: 0 2px 10px rgba(245,200,66,0.3); }
+
+    .intro-scroll-hint {
+      font-size: 12px; color: rgba(255,255,255,0.35);
+      animation: bounce 1.5s infinite;
+    }
+    @keyframes bounce { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(-5px);} }
+
+    /* ===== MINI GAME SCREEN ===== */
+    #screen-game {
+      background: transparent;
+      gap: 0; justify-content: flex-start;
+      padding-top: 0;
+    }
+
+    /* Faith fill background */
+    #faith-fill {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      height: 0%;
+      background: linear-gradient(to top, rgba(245, 200, 66, 0.9), rgba(255, 159, 67, 0.4));
+      transition: height 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
+      z-index: 1;
+      overflow: hidden;
+      box-shadow: 0 -10px 40px rgba(245,200,66,0.2);
+    }
+
+    /* Game HUD */
+    #game-hud {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 10; padding: 20px 20px 12px;
+      background: linear-gradient(to bottom, rgba(26,16,37,0.95) 60%, transparent);
+    }
+
+    #game-title {
+      font-size: 13px; color: var(--light-gold);
+      letter-spacing: 1.5px; margin-bottom: 8px;
+      text-align: center;
+    }
+
+    #instruction {
+      font-size: 14px; font-weight: 700;
+      text-align: center; color: #fff;
+      line-height: 1.4; margin-bottom: 12px;
+    }
+
+    #instruction span.highlight {
+      color: var(--light-gold);
+    }
+    #instruction span.danger {
+      color: #ff7675;
+    }
+
+    /* Counter ring */
+    #counter-ring {
+      display: flex; align-items: center; justify-content: center;
+      gap: 16px; margin-bottom: 10px;
+    }
+    #touch-count {
+      font-size: 54px; font-weight: 900; line-height: 1;
+      background: linear-gradient(135deg, #f5c842, #ff9f43);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      transition: transform 0.2s;
+    }
+    #touch-count.bump {
+      transform: scale(1.3);
+    }
+    #count-label { font-size: 13px; color: rgba(255,255,255,0.5); }
+
+    /* Progress bar */
+    #prog-bar-wrap {
+      height: 8px; background: rgba(255,255,255,0.12);
+      border-radius: 99px; overflow: hidden;
+    }
+    #prog-bar {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, #ff9f43, #f5c842);
+      border-radius: 99px;
+      transition: width 0.3s ease;
+    }
+
+    /* Game Area for Targets */
+    #game-area {
+      position: fixed; inset: 0; top: 160px; /* Below HUD */
+      z-index: 5; overflow: hidden;
+    }
+
+    .target-item {
+      position: absolute;
+      font-size: 50px;
+      user-select: none;
+      transform: scale(0);
+      animation: pop-in-out 1.2s ease-in-out forwards;
+      z-index: 6;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .target-faith { 
+      filter: drop-shadow(0 0 15px rgba(245,200,66,0.8)); 
+    }
+    .target-fear { 
+      filter: drop-shadow(0 0 15px rgba(255,118,117,0.8)); 
+    }
+    
+    @keyframes pop-in-out {
+      0%   { transform: scale(0); opacity: 0; }
+      15%  { transform: scale(1.2); opacity: 1; }
+      25%  { transform: scale(1); opacity: 1; }
+      85%  { transform: scale(1); opacity: 1; }
+      100% { transform: scale(0); opacity: 0; }
+    }
+
+    /* Touch ripple */
+    .ripple {
+      position: fixed; border-radius: 50%;
+      background: rgba(245,200,66,0.35);
+      transform: scale(0); pointer-events: none; z-index: 9;
+      animation: ripple-out 0.55s ease-out forwards;
+    }
+    @keyframes ripple-out {
+      to { transform: scale(6); opacity: 0; }
+    }
+
+    /* Score Pop */
+    .score-pop {
+      position: fixed; font-size: 24px; font-weight: 900;
+      pointer-events: none; z-index: 10;
+      animation: faith-fly 0.8s ease-out forwards;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+    .pop-plus { color: #f5c842; }
+    .pop-minus { color: #ff7675; }
+
+    @keyframes faith-fly {
+      0%   { transform: translateY(0) scale(1); opacity: 1; }
+      100% { transform: translateY(-60px) scale(0.6); opacity: 0; }
+    }
+
+    /* Fear Screen Flash */
+    #fear-flash {
+      position: fixed; inset: 0; background: rgba(200, 0, 0, 0.4);
+      z-index: 8; opacity: 0; pointer-events: none;
+      transition: opacity 0.2s;
+    }
+
+    /* Message Flash */
+    #msg-flash {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%) scale(0.5);
+      z-index: 20; color: white;
+      font-size: 24px; font-weight: 900;
+      text-align: center; line-height: 1.4;
+      text-shadow: 0 4px 15px rgba(0,0,0,0.8);
+      opacity: 0; pointer-events: none;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    #msg-flash.show {
+      opacity: 1; transform: translate(-50%, -50%) scale(1);
+    }
+
+    /* ===== QUIZ SCREEN ===== */
+    #screen-quiz {
+      background: linear-gradient(160deg, #1a1025 0%, #3a1c4a 100%);
+      gap: 20px;
+    }
+
+    .quiz-header {
+      text-align: center;
+    }
+    .quiz-step {
+      font-size: 12px; letter-spacing: 2px;
+      color: var(--light-gold); margin-bottom: 6px;
+    }
+    .quiz-q {
+      font-size: clamp(17px, 5vw, 22px);
+      font-weight: 800; line-height: 1.45;
+      max-width: 360px;
+    }
+
+    .quiz-card {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px; padding: 28px 20px;
+      width: 100%; max-width: 400px;
+    }
+
+    /* OX buttons */
+    .ox-group {
+      display: flex; gap: 16px; justify-content: center;
+      margin-top: 20px;
+    }
+    .ox-btn {
+      flex: 1; max-width: 140px;
+      padding: 18px 0; font-size: 36px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 16px; background: rgba(255,255,255,0.05);
+      color: white; cursor: pointer; font-weight: 900;
+      transition: all 0.18s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .ox-btn:active { transform: scale(0.93); }
+    .ox-btn.o-btn { border-color: #4fc3f7; color: #4fc3f7; }
+    .ox-btn.x-btn { border-color: #ff7675; color: #ff7675; }
+
+    /* Subjective input */
+    .subj-group {
+      margin-top: 20px; display: flex; flex-direction: column; gap: 12px;
+    }
+    .subj-input {
+      width: 100%; padding: 14px 18px;
+      background: rgba(255,255,255,0.1);
+      border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 12px; color: white;
+      font-size: 18px; font-weight: 700;
+      outline: none; text-align: center;
+      transition: border-color 0.2s;
+      -webkit-appearance: none;
+    }
+    .subj-input:focus { border-color: #f5c842; }
+    .subj-input::placeholder { color: rgba(255,255,255,0.3); font-weight: 400; }
+
+    .btn-submit {
+      background: linear-gradient(135deg, #f5c842, #ff9f43);
+      color: #1a1a1a; border: none; border-radius: 12px;
+      padding: 14px; font-size: 16px; font-weight: 800;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.15s;
+    }
+    .btn-submit:active { transform: scale(0.96); }
+
+    /* Hint */
+    .quiz-hint {
+      font-size: 12px; color: rgba(255,255,255,0.3);
+      text-align: center;
+    }
+
+    /* Wrong flash */
+    #wrong-overlay {
+      position: fixed; inset: 0; z-index: 20;
+      background: var(--red-flash);
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.1s;
+    }
+    #wrong-msg {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%,-50%) scale(0.8);
+      z-index: 21; background: #c0392b;
+      border-radius: 16px; padding: 18px 28px;
+      text-align: center; pointer-events: none;
+      opacity: 0; transition: all 0.2s;
+      white-space: nowrap;
+    }
+    #wrong-msg.show {
+      opacity: 1; transform: translate(-50%,-50%) scale(1);
+    }
+    #wrong-msg .emoji { font-size: 30px; display: block; margin-bottom: 6px; }
+    #wrong-msg .txt   { font-size: 15px; font-weight: 700; }
+
+    /* Progress dots */
+    .quiz-dots {
+      display: flex; gap: 8px; justify-content: center;
+    }
+    .dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      transition: background 0.3s;
+    }
+    .dot.done { background: #f5c842; }
+    .dot.active { background: #ff9f43; }
+
+    /* ===== ENDING SCREEN ===== */
+    #screen-end {
+      background: linear-gradient(160deg, #ff9f43 0%, #f5c842 40%, #ffdf73 100%);
+      gap: 22px;
+    }
+
+    .end-sun {
+      width: 90px; height: 90px; border-radius: 50%;
+      background: radial-gradient(circle, #ffffff, #fffdf2, #f5c842);
+      box-shadow: 0 0 40px 15px rgba(255,255,255,0.6);
+      animation: sun-pulse 3s ease-in-out infinite;
+    }
+    @keyframes sun-pulse {
+      0%,100% { box-shadow: 0 0 40px 15px rgba(255,255,255,0.6); }
+      50%      { box-shadow: 0 0 60px 25px rgba(255,255,255,0.8); }
+    }
+
+    .end-boat { font-size: 64px; }
+
+    .end-title {
+      text-align: center;
+    }
+    .end-title .congrats {
+      font-size: 13px; letter-spacing: 2px;
+      color: rgba(60,20,0,0.7); display: block; margin-bottom: 6px;
+      font-weight: 700;
+    }
+    .end-title .main {
+      font-size: clamp(22px, 6vw, 30px);
+      font-weight: 900; color: #3c1400; line-height: 1.3;
+    }
+
+    .end-verse {
+      background: rgba(255,255,255,0.5);
+      backdrop-filter: blur(8px);
+      border-radius: 16px; padding: 18px 20px;
+      text-align: center; max-width: 360px;
+      color: #3c1400;
+    }
+    .end-verse .verse-text {
+      font-size: 14px; line-height: 1.75; font-style: italic; margin-bottom: 8px;
+    }
+    .end-verse .verse-ref {
+      font-size: 12px; font-weight: 700;
+      color: rgba(60,20,0,0.65);
+    }
+
+    .btn-restart {
+      background: #3c1400; color: #f5c842;
+      border: none; border-radius: 50px;
+      padding: 14px 40px; font-size: 16px; font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(60,20,0,0.2);
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.15s;
+    }
+    .btn-restart:active { transform: scale(0.95); }
+
+    /* Confetti */
+    .confetti-piece {
+      position: fixed; width: 10px; height: 14px;
+      top: -20px; border-radius: 2px;
+      animation: confetti-fall var(--cf-d) linear var(--cf-delay) infinite;
+      z-index: 0; pointer-events: none;
+    }
+    @keyframes confetti-fall {
+      0%   { transform: translateY(0) rotate(0); opacity:1; }
+      100% { transform: translateY(110vh) rotate(720deg); opacity:0; }
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<!-- ── Ambient Elements ── -->
+<div id="starfield"></div>
+<span id="boat-icon">⚓</span>
+
+<!-- ══════════════════════════════════════
+     SCREEN 1 : INTRO
+══════════════════════════════════════ -->
+<section class="screen active" id="screen-intro">
+  <div class="intro-badge">⚓ STAGE 3 of 3</div>
+
+  <div class="intro-title">
+    <span class="sub">갈릴리 항해사 자격시험</span>
+    <span class="main">입항: 믿기만 하라</span>
+  </div>
+
+  <div class="intro-verse">
+    <em>"예수께서 들으시고 이르시되<br>
+    두려워하지 말고 믿기만 하라<br>
+    그리하면 딸이 구원을 얻으리라 하시고"</em><br><br>
+    누가복음 8:50
+  </div>
+
+  <button class="btn-start" id="btn-start">✨ 믿음으로 나아가기</button>
+
+  <p class="intro-scroll-hint">▼ 생명의 주인이 기다리고 계십니다 ▼</p>
+</section>
+
+<!-- ══════════════════════════════════════
+     SCREEN 2 : MINI GAME
+══════════════════════════════════════ -->
+<section class="screen" id="screen-game">
+  <!-- Game Target Area -->
+  <div id="game-area"></div>
+
+  <!-- Faith Light Fill Background -->
+  <div id="faith-fill"></div>
+
+  <!-- HUD -->
+  <div id="game-hud">
+    <div id="game-title">🤚 무리를 뚫고 옷자락 만지기</div>
+    <div id="instruction">
+      나타나는 <span class="highlight">옷자락(✨)을 12번</span> 터치하세요!<br>
+      <span class="danger">두려움(😱)을 누르면 믿음이 감소합니다.</span>
+    </div>
+    <div id="counter-ring">
+      <div>
+        <div id="touch-count">0</div>
+        <div id="count-label">/ 12</div>
+      </div>
+    </div>
+    <div id="prog-bar-wrap"><div id="prog-bar"></div></div>
+  </div>
+
+  <div id="fear-flash"></div>
+  <div id="msg-flash">"내게서 능력이<br>나간 줄 앎이로다"</div>
+</section>
+
+<!-- ══════════════════════════════════════
+     SCREEN 3 : QUIZ
+══════════════════════════════════════ -->
+<section class="screen" id="screen-quiz">
+
+  <div class="quiz-dots" id="quiz-dots">
+    <div class="dot active" id="dot-0"></div>
+    <div class="dot" id="dot-1"></div>
+    <div class="dot" id="dot-2"></div>
+  </div>
+
+  <div class="quiz-header">
+    <div class="quiz-step" id="quiz-step">문제 1 / 3</div>
+    <div class="quiz-q" id="quiz-q">Loading…</div>
+  </div>
+
+  <div class="quiz-card" id="quiz-card">
+    <!-- dynamically injected -->
+  </div>
+
+  <p class="quiz-hint" id="quiz-hint">⚡ 틀리면 다시 도전!</p>
+</section>
+
+<!-- ══════════════════════════════════════
+     SCREEN 4 : ENDING
+══════════════════════════════════════ -->
+<section class="screen" id="screen-end">
+  <div class="end-sun"></div>
+  <div class="end-boat">⚓</div>
+
+  <div class="end-title">
+    <span class="congrats">🎉 MISSION COMPLETE</span>
+    <span class="main">생명의 주인이신 예수님을<br>온전히 믿고 의지합니다!</span>
+  </div>
+
+  <div class="end-verse">
+    <p class="verse-text">"예수께서 이르시되 딸아<br>
+    네 믿음이 너를 구원하였으니<br>
+    평안히 가라 하시더라"</p>
+    <p class="verse-ref">누가복음 8:48</p>
+  </div>
+
+  <button class="btn-restart" id="btn-restart">🔄 다시 결단하기</button>
+</section>
+
+<!-- Wrong Answer Overlay -->
+<div id="wrong-overlay"></div>
+<div id="wrong-msg">
+  <span class="emoji">🤔</span>
+  <span class="txt" id="wrong-txt">다시 생각해봐요!</span>
+</div>
+
+<script>
+/* ==========================================
+   UTILITY
+========================================== */
+const $ = id => document.getElementById(id);
+const screens = {
+  intro : $('screen-intro'),
+  game  : $('screen-game'),
+  quiz  : $('screen-quiz'),
+  end   : $('screen-end'),
+};
+
+function showScreen(name) {
+  Object.values(screens).forEach(s => s.classList.remove('active'));
+  screens[name].classList.add('active');
+}
+
+/* ==========================================
+   RISING LIGHT PARTICLES
+========================================== */
+(function buildStars() {
+  const sf = $('starfield');
+  for (let i = 0; i < 40; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = Math.random() * 3 + 2;
+    s.style.cssText = `
+      width:${size}px; height:${size}px;
+      top:${100 + Math.random()*20}%;
+      left:${Math.random()*100}%;
+      --d:${(Math.random()*2+1).toFixed(1)}s;
+      --s:${(Math.random()*8+4).toFixed(1)}s;
+      animation-delay: -${Math.random()*5}s;
+    `;
+    sf.appendChild(s);
+  }
+})();
+
+/* ==========================================
+   SCREEN: INTRO
+========================================== */
+$('btn-start').addEventListener('click', () => {
+  startGameScreen();
+});
+
+/* ==========================================
+   SCREEN: MINI GAME (옷자락 찾기 12번)
+========================================== */
+let touchCount = 0;
+const GOAL = 12; // 혈루증 12년, 딸 12살
+let gameInterval;
+let isPlaying = false;
+
+function startGameScreen() {
+  showScreen('game');
+  touchCount = 0;
+  isPlaying = true;
+  $('game-area').innerHTML = ''; // Clear previous targets
+  $('msg-flash').classList.remove('show');
+  updateGameUI();
+  
+  // Start spawning targets
+  gameInterval = setInterval(spawnTarget, 650);
+}
+
+function updateGameUI() {
+  const counter = $('touch-count');
+  counter.textContent = touchCount;
+  
+  // Bump animation
+  counter.classList.remove('bump');
+  void counter.offsetWidth; // trigger reflow
+  counter.classList.add('bump');
+
+  $('prog-bar').style.width = `${(touchCount/GOAL)*100}%`;
+  // Faith Light background height
+  const faithH = (touchCount / GOAL) * 100;
+  $('faith-fill').style.height = `${faithH}%`;
+}
+
+function spawnTarget() {
+  if (!isPlaying) return;
+
+  const isFaith = Math.random() > 0.35; // 65% chance for faith, 35% for fear
+  const el = document.createElement('div');
+  el.className = `target-item ${isFaith ? 'target-faith' : 'target-fear'}`;
+  el.textContent = isFaith ? '✨' : '😱';
+  
+  // Random positioning within the game area bounds (approx padding)
+  el.style.left = Math.floor(Math.random() * 75 + 10) + '%';
+  el.style.top = Math.floor(Math.random() * 75 + 5) + '%';
+  
+  // Add touch/click listener
+  const handleTap = (e) => {
+    e.preventDefault();
+    if (!el.parentNode) return;
+    
+    // Position for pop effect
+    const rect = el.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    
+    el.remove(); // Remove immediately on tap
+    processTap(isFaith, x, y);
+  };
+
+  el.addEventListener('touchstart', handleTap, {passive: false});
+  el.addEventListener('click', handleTap);
+  
+  $('game-area').appendChild(el);
+  
+  // Auto remove after animation completes
+  setTimeout(() => {
+    if (el.parentNode) el.remove();
+  }, 1200);
+}
+
+function processTap(isFaith, x, y) {
+  if (!isPlaying) return;
+
+  if (isFaith) {
+    touchCount++;
+    spawnRipple(x, y);
+    spawnScorePop(x, y, '+1', true);
+  } else {
+    // Penalty for tapping fear
+    touchCount = Math.max(0, touchCount - 1);
+    shakeScreen();
+    spawnScorePop(x, y, '-1', false);
+  }
+  
+  updateGameUI();
+
+  // Win condition check
+  if (touchCount >= GOAL) {
+    isPlaying = false;
+    clearInterval(gameInterval);
+    $('game-area').innerHTML = ''; // Clear board
+    
+    // Flash message
+    $('msg-flash').classList.add('show');
+    
+    setTimeout(() => {
+      showQuizScreen();
+    }, 2000);
+  }
+}
+
+function spawnRipple(x, y) {
+  const r = document.createElement('div');
+  r.className = 'ripple';
+  const size = 60;
+  r.style.cssText = `
+    width:${size}px; height:${size}px;
+    left:${x - size/2}px; top:${y - size/2}px;
+  `;
+  document.body.appendChild(r);
+  r.addEventListener('animationend', () => r.remove());
+}
+
+function spawnScorePop(x, y, text, isPositive) {
+  const b = document.createElement('div');
+  b.className = `score-pop ${isPositive ? 'pop-plus' : 'pop-minus'}`;
+  b.textContent = text;
+  b.style.left = `${x - 15}px`;
+  b.style.top  = `${y - 15}px`;
+  document.body.appendChild(b);
+  b.addEventListener('animationend', () => b.remove());
+}
+
+function shakeScreen() {
+  // Flash red background
+  const flash = $('fear-flash');
+  flash.style.opacity = '1';
+  setTimeout(() => flash.style.opacity = '0', 200);
+
+  // Vibrate screen via CSS
+  document.body.style.animation = 'none';
+  let shakes = 0;
+  const shakeIt = setInterval(() => {
+    document.body.style.transform = `translate(${(Math.random()-0.5)*10}px, ${(Math.random()-0.5)*10}px)`;
+    if (++shakes > 6) { 
+      clearInterval(shakeIt); 
+      document.body.style.transform = ''; 
+    }
+  }, 50);
+}
+
+/* ==========================================
+   SCREEN: QUIZ
+========================================== */
+const QUIZZES = [
+  {
+    type   : 'ox',
+    q      : '12년 동안 혈루증을 앓던 여자는 예수님의 옷 가에 손을 대어 병이 나았다.',
+    answer : 'O',
+    hint   : '누가복음 8장 44절을 떠올려보세요! 📖',
+  },
+  {
+    type   : 'ox',
+    q      : '딸이 죽었다는 소식을 듣고 두려워하는 야이로에게 예수님은 "이제 끝났다"고 말씀하셨다.',
+    answer : 'X',
+    hint   : '예수님은 "두려워하지 말고 믿기만 하라"고 하셨어요! 🙏',
+  },
+  {
+    type   : 'subj',
+    q      : '생명의 주인이신 예수님께서 죽은 소녀의 손을 잡고 하신 말씀은 "아이야 (      )" 이다.',
+    answer : '일어나라',
+    alternatives: ['일어나라!'],
+    hint   : '죽음을 이기는 예수님의 명령입니다 ⚡',
+  },
+];
+
+let currentQ = 0;
+let wrongTimeouts = [];
+
+function showQuizScreen() {
+  currentQ = 0;
+  showScreen('quiz');
+  renderQuiz();
+}
+
+function updateDots(idx) {
+  for (let i = 0; i < 3; i++) {
+    const d = $(`dot-${i}`);
+    d.className = 'dot';
+    if (i < idx)  d.classList.add('done');
+    if (i === idx) d.classList.add('active');
+  }
+}
+
+function renderQuiz() {
+  const q = QUIZZES[currentQ];
+  $('quiz-step').textContent = `문제 ${currentQ+1} / 3`;
+  $('quiz-q').textContent    = q.q;
+  $('quiz-hint').textContent = `⚡ 틀리면 다시 도전!`;
+  updateDots(currentQ);
+
+  const card = $('quiz-card');
+  card.innerHTML = '';
+
+  if (q.type === 'ox') {
+    card.innerHTML = `
+      <div style="text-align:center;font-size:13px;color:rgba(255,255,255,0.45);margin-bottom:4px;">
+        O 또는 X를 선택하세요
+      </div>
+      <div class="ox-group">
+        <button class="ox-btn o-btn" data-val="O">⭕</button>
+        <button class="ox-btn x-btn" data-val="X">❌</button>
+      </div>
+    `;
+    card.querySelectorAll('.ox-btn').forEach(btn => {
+      btn.addEventListener('click', () => checkAnswer(btn.dataset.val));
+    });
+  } else {
+    card.innerHTML = `
+      <div style="text-align:center;font-size:13px;color:rgba(255,255,255,0.45);margin-bottom:12px;">
+        정답을 직접 입력하세요 ✍️
+      </div>
+      <div class="subj-group">
+        <input class="subj-input" id="subj-input" type="text" placeholder="정답 입력..." maxlength="20" />
+        <button class="btn-submit" id="btn-submit">확인 ✅</button>
+      </div>
+    `;
+    $('btn-submit').addEventListener('click', () => {
+      const val = $('subj-input').value.trim();
+      checkAnswer(val);
+    });
+    $('subj-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const val = $('subj-input').value.trim();
+        checkAnswer(val);
+      }
+    });
+  }
+}
+
+function checkAnswer(val) {
+  const q = QUIZZES[currentQ];
+  let correct = false;
+
+  if (q.type === 'ox') {
+    correct = val.toUpperCase() === q.answer.toUpperCase();
+  } else {
+    const normalized = val.replace(/\s/g, '').toLowerCase();
+    const answers = [q.answer, ...(q.alternatives || [])].map(a =>
+      a.replace(/\s/g, '').toLowerCase()
+    );
+    correct = answers.includes(normalized);
+  }
+
+  if (correct) {
+    updateDots(currentQ + 1);
+    currentQ++;
+    if (currentQ >= QUIZZES.length) {
+      showEndScreen();
+    } else {
+      // Brief green flash
+      const card = $('quiz-card');
+      card.style.borderColor = '#2ecc71';
+      card.style.boxShadow   = '0 0 20px rgba(46,204,113,0.4)';
+      setTimeout(() => {
+        card.style.borderColor = '';
+        card.style.boxShadow   = '';
+        renderQuiz();
+      }, 400);
+    }
+  } else {
+    showWrong();
+  }
+}
+
+function showWrong() {
+  const overlay = $('wrong-overlay');
+  const msg     = $('wrong-msg');
+  $('wrong-txt').textContent = [
+    '다시 생각해봐요! 🤔',
+    '두려워하지 말고 다시 도전! ✨',
+    '성경을 떠올려봐요! 📖',
+  ][Math.floor(Math.random()*3)];
+
+  overlay.style.opacity = '1';
+  msg.classList.add('show');
+
+  // Shake quiz card
+  const card = $('quiz-card');
+  card.style.animation = 'none';
+  card.style.transform = 'translateX(0)';
+  let shakes = 0;
+  const shakeIt = setInterval(() => {
+    card.style.transform = `translateX(${shakes % 2 === 0 ? -8 : 8}px)`;
+    if (++shakes > 6) { clearInterval(shakeIt); card.style.transform = ''; }
+  }, 60);
+
+  const t1 = setTimeout(() => { overlay.style.opacity = '0'; }, 500);
+  const t2 = setTimeout(() => { msg.classList.remove('show'); }, 700);
+  wrongTimeouts.push(t1, t2);
+}
+
+/* ==========================================
+   SCREEN: ENDING
+========================================== */
+function showEndScreen() {
+  showScreen('end');
+  launchConfetti();
+}
+
+const CONFETTI_COLORS = ['#ffffff','#f5c842','#ff9f43','#ffdf73'];
+let confettiPieces = [];
+function launchConfetti() {
+  confettiPieces.forEach(p => p.remove());
+  confettiPieces = [];
+  for (let i = 0; i < 60; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    const dur   = (Math.random()*2 + 2).toFixed(1);
+    const delay = (Math.random()*3).toFixed(1);
+    p.style.cssText = `
+      left:${Math.random()*100}%;
+      background:${CONFETTI_COLORS[Math.floor(Math.random()*CONFETTI_COLORS.length)]};
+      --cf-d:${dur}s; --cf-delay:${delay}s;
+      transform:rotate(${Math.random()*360}deg);
+    `;
+    document.body.appendChild(p);
+    confettiPieces.push(p);
+  }
+}
+
+$('btn-restart').addEventListener('click', () => {
+  confettiPieces.forEach(p => p.remove());
+  confettiPieces = [];
+  touchCount = 0;
+  currentQ = 0;
+  showScreen('intro');
+});
+</script>
+</body>
+</html>
