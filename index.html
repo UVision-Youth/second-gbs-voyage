@@ -65,8 +65,8 @@
       50%     { transform: translateX(-50%) translateY(-8px); }
     }
 
-    /* ===== INTRO SCREEN ===== */
-    #screen-intro { background: transparent; gap: 18px; }
+    /* ===== INTRO / LOCKED SCREEN ===== */
+    #screen-intro, #screen-locked { background: transparent; gap: 18px; }
 
     .intro-badge {
       background: rgba(255,255,255,0.08);
@@ -396,9 +396,24 @@
 <span id="boat-icon">⚓</span>
 
 <!-- ══════════════════════════════════════
+     SCREEN 0 : LOCKED (접근 제한)
+══════════════════════════════════════ -->
+<section class="screen" id="screen-locked">
+  <div class="intro-title">
+    <span class="sub">접근 제한</span>
+    <span class="main" style="font-size: clamp(24px, 6vw, 30px);">아직 오픈 시간이 아닙니다</span>
+  </div>
+  <div style="margin-top: 20px; background: rgba(255,255,255,0.07); border: 1px solid rgba(245,200,66,0.3); border-radius: 12px; padding: 20px; text-align: center; color: var(--white); font-size: 14px; line-height: 1.6;">
+    콘텐츠 오픈 일시: <br><strong style="color: var(--faith-gold); font-size: 18px;">2026년 8월 1일 오후 4시 5분</strong><br><br>
+    <span style="color: rgba(255,255,255,0.7); font-size: 12px;">시간이 지나면 화면을 새로고침 해주세요 ⏳</span>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
      SCREEN 1 : INTRO
 ══════════════════════════════════════ -->
-<section class="screen active" id="screen-intro">
+<!-- active 클래스 제거 (스크립트에서 관리) -->
+<section class="screen" id="screen-intro">
   <div class="intro-badge">⚓ STAGE 3 of 3</div>
 
   <div class="intro-title">
@@ -501,6 +516,7 @@
 ========================================== */
 const $ = id => document.getElementById(id);
 const screens = {
+  locked: $('screen-locked'),
   intro : $('screen-intro'),
   game  : $('screen-game'),
   quiz  : $('screen-quiz'),
@@ -532,12 +548,30 @@ function showScreen(name) {
 })();
 
 /* ==========================================
+   TIME CHECK ON LOAD (한국 시간 기준)
+========================================== */
+window.addEventListener('DOMContentLoaded', () => {
+  // 2026-08-01 16:05:00 (한국 시간 KST: UTC+9)
+  const unlockTime = new Date('2026-08-01T16:05:00+09:00').getTime();
+  const now = new Date().getTime();
+
+  if (now < unlockTime) {
+    // 2026-08-01 16:05 이전이면 Lock 화면 띄우기
+    showScreen('locked');
+  } else {
+    // 시간이 지났으면 인트로 화면 실행
+    showScreen('intro');
+    initIntro();
+  }
+});
+
+/* ==========================================
    SCREEN 1: INTRO (순 & 이름 처리)
 ========================================== */
 let selectedSun = "";
 let enteredName = "";
 
-(function initIntro() {
+function initIntro() {
   const suns = [1,2,3,4,5,6,7,8,9,10,11,12,13];
   suns.sort(() => Math.random() - 0.5); // 랜덤 섞기
   const sel = $('sun-select');
@@ -547,7 +581,7 @@ let enteredName = "";
     opt.textContent = s + "순";
     sel.appendChild(opt);
   });
-})();
+}
 
 $('btn-start').addEventListener('click', () => {
   selectedSun = $('sun-select').value;
