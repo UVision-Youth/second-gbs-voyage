@@ -315,7 +315,7 @@
     }
     .btn-submit:active { transform: scale(0.96); }
 
-    .quiz-hint { font-size: 12px; color: rgba(255,255,255,0.3); text-align: center; }
+    .quiz-hint { font-size: 12px; color: rgba(255,255,255,0.5); text-align: center; }
 
     #wrong-overlay {
       position: fixed; inset: 0; z-index: 20; background: var(--red-flash);
@@ -411,7 +411,6 @@
 <!-- ══════════════════════════════════════
      SCREEN 1 : INTRO
 ══════════════════════════════════════ -->
-<!-- active 클래스 제거 (스크립트에서 관리) -->
 <section class="screen" id="screen-intro">
   <div class="intro-badge">⚓ STAGE 3 of 3</div>
 
@@ -475,7 +474,7 @@
     <!-- dynamically injected -->
   </div>
 
-  <p class="quiz-hint" id="quiz-hint">⚡ 틀리면 다시 처음부터 미니게임을 통과해야 합니다!</p>
+  <p class="quiz-hint" id="quiz-hint">⚡ 틀리면 다시 무리를 뚫고(12번 터치) 와야 합니다!</p>
 </section>
 
 <!-- ══════════════════════════════════════
@@ -505,7 +504,7 @@
 <div id="wrong-msg">
   <span class="emoji">😱</span>
   <span class="txt" id="wrong-txt">오답입니다!</span>
-  <span class="subtxt">다시 12번의 옷자락을 만져야 합니다!</span>
+  <span class="subtxt">다시 12번의 믿음이 필요합니다!</span>
 </div>
 
 <script>
@@ -588,17 +587,17 @@ $('btn-start').addEventListener('click', () => {
   if (!selectedSun) { alert("순을 선택해주세요!"); return; }
   if (!enteredName) { alert("이름을 입력해주세요!"); return; }
 
-  // 게임 초기화 후 시작
-  currentGoal = 12;
+  // 시작
+  currentGoal = 12; // 목표는 무조건 12
   currentQ = 0;
   setupQuizDots();
   startGameScreen();
 });
 
 /* ==========================================
-   SCREEN 2: MINI GAME (목표 횟수 12 고정)
+   SCREEN 2: MINI GAME
 ========================================== */
-let currentGoal = 12;
+let currentGoal = 12; // 12 고정
 let touchCount = 0;
 let gameInterval;
 let isPlaying = false;
@@ -609,14 +608,15 @@ function startGameScreen() {
   isPlaying = true;
   $('game-area').innerHTML = ''; 
   $('msg-flash').classList.remove('show');
-  
+
   $('ui-goal').textContent = currentGoal;
   $('label-goal').textContent = currentGoal;
   
   updateGameUI();
   clearInterval(gameInterval);
-  // 고정 속도로 스폰 (원할 경우 속도 조절 가능)
-  const speed = 650;
+  
+  // 12회 고정이므로 일정한 스폰 속도로 설정
+  const speed = 600; 
   gameInterval = setInterval(spawnTarget, speed);
 }
 
@@ -723,12 +723,13 @@ const QUIZZES = [
   { type: 'ox', q: '"평안히 가라"는 예수님의 말씀은 부정한 상태가 끝났고, 하나님과 사람들과의 관계가 완전히 회복되었다는 선포이다.', answer: 'O' },
   { type: 'ox', q: '부정한 여자가 예수님을 만졌을 때, 세상의 율법과 법칙대로 예수님도 함께 부정하게 오염되셨다.', answer: 'X' },
   { type: 'ox', q: '인생에 찾아오는 두 종류의 절망은, 혈루증 여인처럼 오랫동안 지치게 만드는 절망과 야이로처럼 갑자기 모든 게 무너져 끝났다고 느끼는 절망이다.', answer: 'O' },
-  { type: 'ox', q: '예수님이 사람들이 확실히 죽은 아이를 보며 비웃을 때, 생명을 살릴 능력이 부족하여 크게 당황하셨다.', answer: 'X' },
+  { type: 'ox', q: '예수님은 사람들이 확실히 죽은 아이를 보며 비웃을 때, 생명을 살릴 능력이 부족하여 크게 당황하셨다.', answer: 'X' },
   { type: 'ox', q: '예수님이 시체(죽은 아이)의 손을 잡으셨을 때 일어난 일은, 죽음이 예수님을 오염시킨 것이 아니라 예수님의 생명이 죽음을 이겼다는 것을 보여준다.', answer: 'O' },
   { type: 'subj', q: '야이로의 딸이 죽었다는 소식이 들려왔을 때, 예수님은 야이로에게 "두려워하지 말고 OO만 하라"고 말씀하셨다.', answer: '믿기', alternatives: ['믿기만'] },
 ];
 
 let currentQ = 0;
+let isProcessingAnswer = false; // 중복 제출 방지용
 
 function setupQuizDots() {
   const c = $('quiz-dots');
@@ -742,6 +743,7 @@ function setupQuizDots() {
 }
 
 function showQuizScreen() {
+  isProcessingAnswer = false;
   showScreen('quiz');
   renderQuiz();
 }
@@ -791,7 +793,9 @@ function renderQuiz() {
 }
 
 function checkAnswer(val) {
-  if(!val) return;
+  if(!val || isProcessingAnswer) return;
+  isProcessingAnswer = true; // 처리 중 잠금
+  
   const q = QUIZZES[currentQ];
   let correct = false;
 
@@ -814,16 +818,18 @@ function checkAnswer(val) {
       card.style.boxShadow   = '0 0 20px rgba(46,204,113,0.4)';
       setTimeout(() => {
         card.style.borderColor = ''; card.style.boxShadow = '';
-        renderQuiz();
-      }, 400);
+        // 다음 문제로 바로 넘어가지 않고 다음 게임을 호출
+        startGameScreen();
+      }, 600);
     }
   } else {
-    // 오답 시 처리 (목표 12회로 고정 & 미니게임 리턴)
+    // 오답 시 처리 (틀린 문제를 유지하고 미니게임 12회 재도전)
     showWrong();
     setTimeout(() => {
       $('wrong-overlay').style.opacity = '0';
       $('wrong-msg').classList.remove('show');
-      currentGoal = 12; // 목표 횟수를 12로 명시적 고정
+      
+      // currentQ를 증가시키지 않고 미니게임 다시 호출
       startGameScreen();
     }, 1800);
   }
