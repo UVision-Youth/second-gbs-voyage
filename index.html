@@ -170,7 +170,6 @@
     }
     #instruction span.highlight { color: var(--light-gold); }
     #instruction span.danger { color: #ff7675; }
-    #instruction span.warning-text { color: #ffdf73; font-size: 12px; display: block; margin-top:4px;}
 
     /* Counter ring */
     #counter-ring {
@@ -444,7 +443,6 @@
     <div id="instruction">
       나타나는 <span class="highlight">옷자락(✨)을 <span id="ui-goal">12</span>번</span> 터치하세요!<br>
       <span class="danger">두려움(😱)을 누르면 믿음이 감소합니다.</span>
-      <span class="warning-text" id="penalty-notice" style="display:none;">⚠️ 오답 페널티: 목표량이 2배로 증가했습니다!</span>
     </div>
     <div id="counter-ring">
       <div>
@@ -477,7 +475,7 @@
     <!-- dynamically injected -->
   </div>
 
-  <p class="quiz-hint" id="quiz-hint">⚡ 틀리면 터치 횟수가 2배로 늘어나 다시 시작합니다!</p>
+  <p class="quiz-hint" id="quiz-hint">⚡ 틀리면 다시 처음부터 미니게임을 통과해야 합니다!</p>
 </section>
 
 <!-- ══════════════════════════════════════
@@ -507,7 +505,7 @@
 <div id="wrong-msg">
   <span class="emoji">😱</span>
   <span class="txt" id="wrong-txt">오답입니다!</span>
-  <span class="subtxt">목표 횟수가 2배로 증가합니다...</span>
+  <span class="subtxt">다시 12번의 옷자락을 만져야 합니다!</span>
 </div>
 
 <script>
@@ -598,7 +596,7 @@ $('btn-start').addEventListener('click', () => {
 });
 
 /* ==========================================
-   SCREEN 2: MINI GAME (동적 목표 횟수)
+   SCREEN 2: MINI GAME (목표 횟수 12 고정)
 ========================================== */
 let currentGoal = 12;
 let touchCount = 0;
@@ -612,17 +610,13 @@ function startGameScreen() {
   $('game-area').innerHTML = ''; 
   $('msg-flash').classList.remove('show');
   
-  // 페널티 UI 표시 여부
-  if(currentGoal > 12) $('penalty-notice').style.display = 'block';
-  else $('penalty-notice').style.display = 'none';
-
   $('ui-goal').textContent = currentGoal;
   $('label-goal').textContent = currentGoal;
   
   updateGameUI();
   clearInterval(gameInterval);
-  // 목표치가 클수록 스폰 속도를 살짝 올림
-  const speed = currentGoal > 24 ? 400 : (currentGoal > 12 ? 500 : 650);
+  // 고정 속도로 스폰 (원할 경우 속도 조절 가능)
+  const speed = 650;
   gameInterval = setInterval(spawnTarget, speed);
 }
 
@@ -729,7 +723,7 @@ const QUIZZES = [
   { type: 'ox', q: '"평안히 가라"는 예수님의 말씀은 부정한 상태가 끝났고, 하나님과 사람들과의 관계가 완전히 회복되었다는 선포이다.', answer: 'O' },
   { type: 'ox', q: '부정한 여자가 예수님을 만졌을 때, 세상의 율법과 법칙대로 예수님도 함께 부정하게 오염되셨다.', answer: 'X' },
   { type: 'ox', q: '인생에 찾아오는 두 종류의 절망은, 혈루증 여인처럼 오랫동안 지치게 만드는 절망과 야이로처럼 갑자기 모든 게 무너져 끝났다고 느끼는 절망이다.', answer: 'O' },
-  { type: 'ox', q: '예수님은 사람들이 확실히 죽은 아이를 보며 비웃을 때, 생명을 살릴 능력이 부족하여 크게 당황하셨다.', answer: 'X' },
+  { type: 'ox', q: '예수님이 사람들이 확실히 죽은 아이를 보며 비웃을 때, 생명을 살릴 능력이 부족하여 크게 당황하셨다.', answer: 'X' },
   { type: 'ox', q: '예수님이 시체(죽은 아이)의 손을 잡으셨을 때 일어난 일은, 죽음이 예수님을 오염시킨 것이 아니라 예수님의 생명이 죽음을 이겼다는 것을 보여준다.', answer: 'O' },
   { type: 'subj', q: '야이로의 딸이 죽었다는 소식이 들려왔을 때, 예수님은 야이로에게 "두려워하지 말고 OO만 하라"고 말씀하셨다.', answer: '믿기', alternatives: ['믿기만'] },
 ];
@@ -824,12 +818,12 @@ function checkAnswer(val) {
       }, 400);
     }
   } else {
-    // 오답 시 처리 (목표 2배 증가 & 미니게임 리턴)
+    // 오답 시 처리 (목표 12회로 고정 & 미니게임 리턴)
     showWrong();
     setTimeout(() => {
       $('wrong-overlay').style.opacity = '0';
       $('wrong-msg').classList.remove('show');
-      currentGoal *= 2;
+      currentGoal = 12; // 목표 횟수를 12로 명시적 고정
       startGameScreen();
     }, 1800);
   }
