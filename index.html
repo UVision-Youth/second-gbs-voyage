@@ -403,7 +403,7 @@
     <span class="main" style="font-size: clamp(24px, 6vw, 30px);">아직 퀴즈 시간이 아닙니다</span>
   </div>
   <div style="margin-top: 20px; background: rgba(255,255,255,0.07); border: 1px solid rgba(245,200,66,0.3); border-radius: 12px; padding: 20px; text-align: center; color: var(--white); font-size: 14px; line-height: 1.6;">
-    콘텐츠 오픈 일시: <br><strong style="color: var(--faith-gold); font-size: 18px;">2026년 8월 5일 오전 10시 30분</strong><br><br>
+    콘텐츠 오픈 일시: <br><strong style="color: var(--faith-gold); font-size: 18px;">2026년 8월 5일 오전 10시 10분</strong><br><br>
     <span style="color: rgba(255,255,255,0.7); font-size: 12px;">시간이 지나면 화면을 새로고침 해주세요 ⏳</span>
   </div>
 </section>
@@ -549,7 +549,7 @@ function showScreen(name) {
 ========================================== */
 window.addEventListener('DOMContentLoaded', () => {
   // 2026-08-01 16:05:00 (한국 시간 KST: UTC+9)
-  const unlockTime = new Date('2026-08-05T10:30:00+09:00').getTime();
+  const unlockTime = new Date('2026-08-05T10:10:00+09:00').getTime();
   const now = new Date().getTime();
 
   if (now < unlockTime) {
